@@ -255,7 +255,7 @@ public class SistemaMentoriaTest {
         assertEquals("Finalizada", sessaoIniciada.getStatus());
 
         SessaoMentoria sessaoParaCancelar = new SessaoMentoria(10L, mentor, mentoradoA, LocalDateTime.now());
-        assertTrue(sessaoParaCancelar.atualizarStatusSessao("cancelada", "Motivo X"));
+        assertTrue(sessaoParaCancelar.atualizarStatusSessao("cancelada", "Motivo: Aluno não compareceu"));
         assertEquals("Cancelada", sessaoParaCancelar.getStatus());
 
         assertFalse(sessaoIniciada.atualizarStatusSessao("aprovada", ""));
