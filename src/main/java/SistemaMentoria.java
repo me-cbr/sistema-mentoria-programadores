@@ -19,7 +19,7 @@ abstract class Usuario {
     public Usuario(Long id, String nome, String email, String senha) {
         this.id = id;
         this.nome = nome;
-        this.email = email.toLowerCase(Locale.ROOT);
+        this.email = email;
         this.senha = senha;
     }
 
@@ -69,7 +69,7 @@ abstract class Usuario {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, nome, email, senha);
+        return Objects.hash(id);
     }
 
 }
@@ -212,19 +212,12 @@ class Mentor extends Usuario {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        Mentor mentor = (Mentor) o;
-        return Objects.equals(getId(), mentor.getId()) &&
-                Objects.equals(biografia, mentor.biografia) &&
-                Objects.equals(tecnologias, mentor.tecnologias) &&
-                areaConhecimento == mentor.areaConhecimento &&
-                Objects.equals(agenda, mentor.agenda) &&
-                Objects.equals(minhasSessoes, mentor.minhasSessoes);
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), biografia, tecnologias, areaConhecimento, agenda, minhasSessoes);
+        return super.hashCode();
     }
 
 }
@@ -260,14 +253,12 @@ class Mentorado extends Usuario {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        Mentorado mentorado = (Mentorado) o;
-        return Objects.equals(id, mentorado.id);
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), planoEstudo);
+        return super.hashCode();
     }
 }
 
@@ -419,7 +410,7 @@ class SessaoMentoria {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, mentor, mentorado, dataHora, status);
+        return Objects.hash(id);
     }
 }
 
@@ -469,7 +460,7 @@ class PlanoEstudo {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, metas);
+        return Objects.hash(id);
     }
 }
 
@@ -534,7 +525,7 @@ class Meta {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, descricao, status, prazo);
+        return Objects.hash(id);
     }
 }
 
@@ -603,17 +594,15 @@ class Feedback {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, sessao, avaliacao, comentario);
+        return Objects.hash(id);
     }
 }
 
 class Avaliacao {
     private Long id;
     private int nota;
-    // O campo 'comentario' foi removido para evitar duplicidade com a classe Feedback.
 
     public Avaliacao(Long id, int nota) {
-        // Alteração: A validação da nota agora permite de 0 a 5.
         if (nota < 0 || nota > 5) {
             throw new IllegalArgumentException("A nota deve estar entre 0 e 5.");
         }
@@ -640,7 +629,6 @@ class Avaliacao {
         this.nota = nota;
     }
 
-    // Métodos get/set e hashCode/equals foram ajustados para remover o 'comentario'.
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -723,7 +711,7 @@ class Mensagem {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, remetente, destinatario, conteudo, dataEnvio);
+        return Objects.hash(id);
     }
 }
 

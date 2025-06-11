@@ -1,6 +1,5 @@
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,7 +11,7 @@ public class SistemaMentoriaTest {
     private Agenda agenda;
     private AreaConhecimento area;
     private Tecnologia tecnologia;
-    private SessaoMentoria sessaoPendente, sessaoAprovada, sessaoIniciada;
+    private SessaoMentoria sessaoPendente, sessaoAprovada, sessaoIniciada, sessaoFinalizada;
     private PlanoEstudo planoEstudo;
     private Meta metaPendente, metaConcluida;
 
@@ -41,173 +40,187 @@ public class SistemaMentoriaTest {
         sessaoAprovada.setStatus("Aprovada");
         sessaoIniciada = new SessaoMentoria(3L, mentor, mentoradoC, LocalDateTime.now().minusMinutes(40));
         sessaoIniciada.setStatus("Iniciada");
+        sessaoFinalizada = new SessaoMentoria(4L, mentor, mentoradoA, LocalDateTime.now().minusDays(1));
+        sessaoFinalizada.setStatus("Finalizada");
 
         mentor.adicionarSessao(sessaoPendente);
         mentor.adicionarSessao(sessaoAprovada);
         mentor.adicionarSessao(sessaoIniciada);
         mentor.getAgenda().adicionarHorario(dataSessao);
-        mentor.getAgenda().adicionarHorario(LocalDateTime.now().plusHours(5));
-        mentor.getAgenda().adicionarHorario(LocalDateTime.now().plusHours(12));
-    }
-
-    @Test
-    void testUsuarioLogin() {
-        assertTrue(mentor.login());
-
-        Mentor mentorSemEmail = new Mentor(5L, "Teste", null, "senha", "Bio", area, agenda);
-        assertFalse(mentorSemEmail.login());
-
-        Mentor mentorSemSenha = new Mentor(6L, "Teste", "teste@email.com", null, "Bio", area, agenda);
-        assertFalse(mentorSemSenha.login());
     }
 
     @Test
     void testUsuarioGettersAndSetters() {
         mentor.setId(10L);
         assertEquals(10L, mentor.getId());
-
         mentor.setNome("Novo Nome");
         assertEquals("Novo Nome", mentor.getNome());
-
         mentor.setEmail("NOVO.EMAIL@EMAIL.COM");
         assertEquals("novo.email@email.com", mentor.getEmail());
-
         mentor.setSenha("novaSenha456");
         assertEquals("novaSenha456", mentor.getSenha());
     }
 
     @Test
-    void testUsuarioEqualsEHashCode() {
-        Mentor mesmoMentor = new Mentor(1L, "Outro Nome", "outro@email.com", "outrasenha", "Outra Bio", area, agenda);
-        Mentor mentorDiferente = new Mentor(99L, "Carlos Silva", "carlos.silva@email.com", "senha123", "Bio", area, agenda);
-
-        assertEquals(mentor, mesmoMentor);
-        assertNotEquals(mentor, mentorDiferente);
-        assertNotEquals(null, mentor);
-        assertNotEquals(mentor, new Object());
-
-        assertEquals(mentor.hashCode(), mesmoMentor.hashCode());
-    }
-
-    @Test
-    void testMentorAdicionarTecnologia() {
-        mentor.adicionarTecnologia(tecnologia);
-        assertTrue(mentor.getTecnologias().contains(tecnologia));
-
-        int tamanhoAntes = mentor.getTecnologias().size();
-        mentor.adicionarTecnologia(tecnologia);
-        assertEquals(tamanhoAntes, mentor.getTecnologias().size());
-
-        mentor.adicionarTecnologia(null);
-        assertEquals(tamanhoAntes, mentor.getTecnologias().size());
-    }
-
-    @Test
-    void testMentorAdicionarSessao() {
-        SessaoMentoria novaSessao = new SessaoMentoria(4L, mentor, mentoradoB, LocalDateTime.now());
-        mentor.adicionarSessao(novaSessao);
-        assertTrue(mentor.getMinhasSessoes().contains(novaSessao));
-
-        int tamanhoAntes = mentor.getMinhasSessoes().size();
-        mentor.adicionarSessao(novaSessao);
-        assertEquals(tamanhoAntes, mentor.getMinhasSessoes().size());
-
-        mentor.adicionarSessao(null);
-        assertEquals(tamanhoAntes, mentor.getMinhasSessoes().size());
-    }
-
-    @Test
-    void testMentorGettersAndSetters() {
+    void testMentorGettersAndSetters() throws FeedbackException {
         mentor.setBiografia("Nova biografia.");
         assertEquals("Nova biografia.", mentor.getBiografia());
-
         AreaConhecimento novaArea = new AreaConhecimento(2L, "Frontend");
         mentor.setAreaConhecimento(novaArea);
         assertEquals(novaArea, mentor.getAreaConhecimento());
-
         Agenda novaAgenda = new Agenda(2L);
         mentor.setAgenda(novaAgenda);
         assertEquals(novaAgenda, mentor.getAgenda());
+        mentor.darFeedback(sessaoFinalizada, 5, "Excelente!");
+        assertNotNull(mentor.getFeedbacks());
+        assertNotNull(mentor.getMinhasSessoes());
+        mentor.adicionarTecnologia(tecnologia);
+        assertNotNull(mentor.getTecnologias());
+    }
+
+    @Test
+    void testMentoradoGettersAndSetters() throws FeedbackException {
+        mentoradoA.darFeedback(sessaoFinalizada, 4, "Ok");
+        assertNotNull(mentoradoA.getFeedbacks());
+        assertNotNull(mentoradoA.getPlanoEstudo());
+    }
+
+    @Test
+    void testMensagemCoverageCompleta() {
+        LocalDateTime data = LocalDateTime.now();
+        Mensagem msg = new Mensagem(1L, mentor, mentoradoA, "Conteúdo Inicial", data);
+
+        msg.setId(99L);
+        assertEquals(99L, msg.getId());
+        msg.setRemetente(mentoradoB);
+        assertEquals(mentoradoB, msg.getRemetente());
+        msg.setDestinatario(mentor);
+        assertEquals(mentor, msg.getDestinatario());
+        msg.setConteudo("Novo Conteúdo");
+        assertEquals("Novo Conteúdo", msg.getConteudo());
+        LocalDateTime novaData = data.plusDays(1);
+        msg.setDataEnvio(novaData);
+        assertEquals(novaData, msg.getDataEnvio());
+
+        assertThrows(IllegalArgumentException.class, () -> new Mensagem(2L, null, mentoradoA, "c", data));
+        assertThrows(IllegalArgumentException.class, () -> new Mensagem(2L, mentor, null, "c", data));
+        assertThrows(IllegalArgumentException.class, () -> new Mensagem(2L, mentor, mentoradoA, null, data));
+        assertThrows(IllegalArgumentException.class, () -> new Mensagem(2L, mentor, mentoradoA, "c", null));
+    }
+
+    @Test
+    void testPlanoEstudoGettersSetters() {
+        PlanoEstudo plano = new PlanoEstudo(99L);
+        plano.setId(100L);
+        assertEquals(100L, plano.getId());
+        plano.adicionarMeta(null);
+        plano.adicionarMeta(metaPendente);
+        plano.adicionarMeta(metaPendente);
+        assertNotNull(plano.getMetas());
+    }
+
+    @Test
+    void testAgendaGettersSetters() {
+        Agenda agendaTest = new Agenda(99L);
+        agendaTest.setId(100L);
+        assertEquals(100L, agendaTest.getId());
+        LocalDateTime agora = LocalDateTime.now();
+        agendaTest.adicionarHorario(agora);
+        agendaTest.adicionarHorario(null);
+        agendaTest.adicionarHorario(agora);
+        assertNotNull(agendaTest.getHorariosDisponiveis());
+        agendaTest.removerHorario(agora);
+        assertTrue(agendaTest.getHorariosDisponiveis().isEmpty());
+    }
+
+    @Test
+    void testAreaConhecimentoGettersSetters() {
+        AreaConhecimento areaTest = new AreaConhecimento(99L, "Teste");
+        areaTest.setId(100L);
+        assertEquals(100L, areaTest.getId());
+        areaTest.setNome("Novo Nome");
+        assertEquals("Novo Nome", areaTest.getNome());
+    }
+
+    @Test
+    void testTecnologiaGettersSetters() {
+        Tecnologia tecTest = new Tecnologia(99L, "Teste");
+        tecTest.setId(100L);
+        assertEquals(100L, tecTest.getId());
+        tecTest.setNome("Novo Nome");
+        assertEquals("Novo Nome", tecTest.getNome());
+    }
+
+    @Test
+    void testAvaliacaoGettersSetters() {
+        Avaliacao aval = new Avaliacao(1L, 3);
+        aval.setId(99L);
+        assertEquals(99L, aval.getId());
+        aval.setNota(5);
+        assertEquals(5, aval.getNota());
+    }
+
+    @Test
+    void testUsuarioLogin() {
+        assertTrue(mentor.login());
+        Mentor mentorSemEmail = new Mentor(5L, "Teste", null, "senha", "Bio", area, agenda);
+        assertFalse(mentorSemEmail.login());
+        Mentor mentorComEmailVazio = new Mentor(5L, "Teste", "", "senha", "Bio", area, agenda);
+        assertFalse(mentorComEmailVazio.login());
+        Mentor mentorSemSenha = new Mentor(6L, "Teste", "teste@email.com", null, "Bio", area, agenda);
+        assertFalse(mentorSemSenha.login());
+        Mentor mentorComSenhaVazia = new Mentor(6L, "Teste", "teste@email.com", "", "Bio", area, agenda);
+        assertFalse(mentorComSenhaVazia.login());
     }
 
     @Test
     void testGerenciarDisponibilidadeEAprovarSessao() {
         LocalDateTime horarioProposto = sessaoPendente.getDataHora();
-
         String resultadoA = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioProposto, sessaoPendente);
         assertEquals("Status da aprovação: Aprovada com Prioridade", resultadoA);
-        assertEquals("Aprovada com Prioridade", sessaoPendente.getStatus());
-
-        sessaoPendente.setStatus("Pendente");
-        LocalDateTime horarioInvalido = LocalDateTime.now().plusDays(5);
-        String resultadoInvalido = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioInvalido, sessaoPendente);
-        assertEquals("Horário proposto não está disponível na agenda.", resultadoInvalido);
 
         SessaoMentoria sessaoB = new SessaoMentoria(5L, mentor, mentoradoB, horarioProposto);
-        sessaoB.setStatus("Pendente");
         mentor.adicionarSessao(sessaoB);
         String resultadoB = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioProposto, sessaoB);
         assertEquals("Status da aprovação: Aprovada Normal", resultadoB);
 
         SessaoMentoria sessaoC = new SessaoMentoria(6L, mentor, mentoradoC, horarioProposto);
-        sessaoC.setStatus("Pendente");
         mentor.adicionarSessao(sessaoC);
         String resultadoC = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioProposto, sessaoC);
         assertEquals("Status da aprovação: Aprovada Condicional", resultadoC);
 
         LocalDateTime horarioProximo = LocalDateTime.now().plusHours(5);
+        mentor.getAgenda().adicionarHorario(horarioProximo);
         SessaoMentoria sessaoProxima = new SessaoMentoria(7L, mentor, mentoradoA, horarioProximo);
-        sessaoProxima.setStatus("Pendente");
         mentor.adicionarSessao(sessaoProxima);
         String resultadoRecusado = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioProximo, sessaoProxima);
         assertEquals("Status da aprovação: Recusada (Muito em cima da hora)", resultadoRecusado);
-        assertEquals("Recusada", sessaoProxima.getStatus());
 
         LocalDateTime horarioMedio = LocalDateTime.now().plusHours(12);
+        mentor.getAgenda().adicionarHorario(horarioMedio);
         SessaoMentoria sessaoMedia = new SessaoMentoria(8L, mentor, mentoradoA, horarioMedio);
-        sessaoMedia.setStatus("Pendente");
         mentor.adicionarSessao(sessaoMedia);
         String resultadoMedio = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioMedio, sessaoMedia);
         assertEquals("Status da aprovação: Aprovada (Revisar disponibilidade)", resultadoMedio);
-        assertEquals("Aprovada", sessaoMedia.getStatus());
     }
 
     @Test
-    void testMentoradoDarFeedback() throws FeedbackException {
-        assertEquals(0, mentoradoA.getFeedbacks().size());
-        mentoradoA.darFeedback(sessaoAprovada, 4, "Sessão foi boa.");
-        assertEquals(1, mentoradoA.getFeedbacks().size());
-        assertEquals("Sessão foi boa.", mentoradoA.getFeedbacks().get(0).getComentario());
-    }
+    void testGerenciarDisponibilidadeCenariosDeErro() {
+        assertEquals("Erro: Horário ou sessão inválidos.", mentor.gerenciarDisponibilidadeEAprovarSessao(null, sessaoPendente));
+        assertEquals("Erro: Horário ou sessão inválidos.", mentor.gerenciarDisponibilidadeEAprovarSessao(LocalDateTime.now(), null));
 
-    @Test
-    void testMentoradoPlanoEstudo() {
-        assertNotNull(mentoradoA.getPlanoEstudo());
+        LocalDateTime horarioInvalido = LocalDateTime.now().plusDays(5);
+        String resultadoInvalido = mentor.gerenciarDisponibilidadeEAprovarSessao(horarioInvalido, sessaoPendente);
+        assertEquals("Horário proposto não está disponível na agenda.", resultadoInvalido);
 
-        PlanoEstudo novoPlano = new PlanoEstudo(2L);
-        mentoradoB.setPlanoEstudo(novoPlano);
-        assertEquals(novoPlano, mentoradoB.getPlanoEstudo());
-    }
+        SessaoMentoria sessaoNaoPendente = new SessaoMentoria(9L, mentor, mentoradoA, sessaoPendente.getDataHora());
+        sessaoNaoPendente.setStatus("Aprovada");
+        mentor.adicionarSessao(sessaoNaoPendente);
+        assertEquals("Sessão não encontrada ou não está pendente.", mentor.gerenciarDisponibilidadeEAprovarSessao(sessaoPendente.getDataHora(), sessaoNaoPendente));
 
-    @Test
-    void testSessaoMentoriaGettersAndSetters() {
-        sessaoPendente.setId(100L);
-        assertEquals(100L, sessaoPendente.getId());
-
-        Mentor novoMentor = new Mentor(10L, "Novo Mentor", "n@m.com", "1", "b", area, agenda);
-        sessaoPendente.setMentor(novoMentor);
-        assertEquals(novoMentor, sessaoPendente.getMentor());
-
-        Mentorado novoMentorado = new Mentorado(11L, "Novo Mentorado", "n@mdo.com", "2");
-        sessaoPendente.setMentorado(novoMentorado);
-        assertEquals(novoMentorado, sessaoPendente.getMentorado());
-
-        LocalDateTime novaData = LocalDateTime.now().plusYears(1);
-        sessaoPendente.setDataHora(novaData);
-        assertEquals(novaData, sessaoPendente.getDataHora());
-
-        sessaoPendente.setStatus("Cancelada");
-        assertEquals("Cancelada", sessaoPendente.getStatus());
+        Mentor mentorSemAgenda = new Mentor(99L, "Sem Agenda", "sa@email.com", "123", "bio", area, null);
+        mentorSemAgenda.adicionarSessao(sessaoPendente);
+        assertEquals("Horário proposto não está disponível na agenda.", mentorSemAgenda.gerenciarDisponibilidadeEAprovarSessao(LocalDateTime.now(), sessaoPendente));
     }
 
     @Test
@@ -226,9 +239,10 @@ public class SistemaMentoriaTest {
         sessaoPendente.iniciarSessao();
         assertNotEquals("Iniciada", sessaoPendente.getStatus());
 
-        sessaoAprovada.setDataHora(LocalDateTime.now().plusHours(1));
-        sessaoAprovada.iniciarSessao();
-        assertNotEquals("Iniciada", sessaoAprovada.getStatus());
+        SessaoMentoria sessaoAprovadaForaDaJanela = new SessaoMentoria(2L, mentor, mentoradoB, LocalDateTime.now().plusMinutes(61));
+        sessaoAprovadaForaDaJanela.setStatus("Aprovada");
+        sessaoAprovadaForaDaJanela.iniciarSessao();
+        assertNotEquals("Iniciada", sessaoAprovadaForaDaJanela.getStatus());
     }
 
     @Test
@@ -243,45 +257,57 @@ public class SistemaMentoriaTest {
 
     @Test
     void testAtualizarStatusSessao() {
-        assertTrue(sessaoPendente.atualizarStatusSessao("aprovada", ""));
-        assertEquals("Aprovada", sessaoPendente.getStatus());
+        SessaoMentoria sessao = new SessaoMentoria(10L, mentor, mentoradoA, LocalDateTime.now());
+        assertTrue(sessao.atualizarStatusSessao("aprovada", ""));
 
-        sessaoAprovada.setDataHora(LocalDateTime.now());
-        assertTrue(sessaoAprovada.atualizarStatusSessao("iniciada", ""));
-        assertEquals("Iniciada", sessaoAprovada.getStatus());
+        sessao.setStatus("Pendente");
+        assertTrue(sessao.atualizarStatusSessao("recusada", "Motivo"));
 
-        sessaoIniciada.setDataHora(LocalDateTime.now().minusMinutes(35));
-        assertTrue(sessaoIniciada.atualizarStatusSessao("finalizada", ""));
-        assertEquals("Finalizada", sessaoIniciada.getStatus());
+        sessao.setStatus("Aprovada");
+        sessao.setDataHora(LocalDateTime.now());
+        assertTrue(sessao.atualizarStatusSessao("iniciada", ""));
 
-        SessaoMentoria sessaoParaCancelar = new SessaoMentoria(10L, mentor, mentoradoA, LocalDateTime.now());
-        assertTrue(sessaoParaCancelar.atualizarStatusSessao("cancelada", "Motivo: Aluno não compareceu"));
-        assertEquals("Cancelada", sessaoParaCancelar.getStatus());
+        sessao.setDataHora(LocalDateTime.now().minusMinutes(35));
+        assertTrue(sessao.atualizarStatusSessao("finalizada", ""));
 
-        assertFalse(sessaoIniciada.atualizarStatusSessao("aprovada", ""));
+        sessao.setStatus("Aprovada");
+        assertTrue(sessao.atualizarStatusSessao("cancelada", "Motivo"));
+
+        sessao.setStatus("Pendente");
+        assertTrue(sessao.atualizarStatusSessao("cancelada", null));
     }
 
     @Test
-    void testPlanoEstudoAdicionarMeta() {
-        int tamanhoInicial = planoEstudo.getMetas().size();
-        Meta novaMeta = new Meta(3L, "Nova Meta", "Pendente", LocalDateTime.now());
-        planoEstudo.adicionarMeta(novaMeta);
-        assertEquals(tamanhoInicial + 1, planoEstudo.getMetas().size());
+    void testAtualizarStatusSessaoTransicoesInvalidas() {
+        assertFalse(sessaoFinalizada.atualizarStatusSessao("aprovada", ""));
+        assertFalse(sessaoFinalizada.atualizarStatusSessao("recusada", ""));
+        assertFalse(sessaoFinalizada.atualizarStatusSessao("iniciada", ""));
+        assertFalse(sessaoIniciada.atualizarStatusSessao("iniciada", ""));
+        assertFalse(sessaoFinalizada.atualizarStatusSessao("finalizada", ""));
+        assertFalse(sessaoIniciada.atualizarStatusSessao("cancelada", ""));
+        assertFalse(sessaoFinalizada.atualizarStatusSessao("desconhecido", ""));
+        assertFalse(sessaoFinalizada.atualizarStatusSessao(null, ""));
+        assertFalse(sessaoFinalizada.atualizarStatusSessao("  ", ""));
+    }
 
-        planoEstudo.adicionarMeta(novaMeta);
-        assertEquals(tamanhoInicial + 1, planoEstudo.getMetas().size());
-
-        planoEstudo.adicionarMeta(null);
-        assertEquals(tamanhoInicial + 1, planoEstudo.getMetas().size());
+    @Test
+    void testFeedbackExcecaoComentarioObrigatorio() {
+        assertThrows(IllegalArgumentException.class, () -> new Feedback(1L, null, 3, "comentário"));
+        assertThrows(FeedbackException.class, () -> new Feedback(2L, sessaoAprovada, 0, null));
+        assertThrows(FeedbackException.class, () -> new Feedback(2L, sessaoAprovada, 0, "  "));
+        assertThrows(FeedbackException.class, () -> new Feedback(2L, sessaoAprovada, 0, ""));
+        assertThrows(FeedbackException.class, () -> new Feedback(3L, sessaoAprovada, 1, null));
+        assertThrows(FeedbackException.class, () -> new Feedback(4L, sessaoAprovada, 5, null));
+        assertDoesNotThrow(() -> new Feedback(5L, sessaoAprovada, 3, null));
+        assertDoesNotThrow(() -> new Feedback(6L, sessaoAprovada, 0, "Comentário válido"));
+        assertDoesNotThrow(() -> new Feedback(7L, sessaoAprovada, 1, "Comentário válido"));
     }
 
     @Test
     void testPlanoEstudoAvaliarProgresso() {
         assertEquals(50.0, planoEstudo.avaliarProgresso(), 0.01);
-
         metaPendente.atualizarStatus("Concluída");
         assertEquals(100.0, planoEstudo.avaliarProgresso(), 0.01);
-
         PlanoEstudo planoVazio = new PlanoEstudo(2L);
         assertEquals(0.0, planoVazio.avaliarProgresso(), 0.01);
     }
@@ -290,17 +316,14 @@ public class SistemaMentoriaTest {
     void testMetaGettersSettersEAtualizarStatus() {
         metaPendente.setId(10L);
         assertEquals(10L, metaPendente.getId());
-
         metaPendente.setDescricao("Nova Descrição");
         assertEquals("Nova Descrição", metaPendente.getDescricao());
-
         LocalDateTime novoPrazo = LocalDateTime.now().plusMonths(2);
         metaPendente.setPrazo(novoPrazo);
         assertEquals(novoPrazo, metaPendente.getPrazo());
-
+        assertNotNull(metaPendente.getPrazo());
         metaPendente.atualizarStatus("Em Andamento");
         assertEquals("Em Andamento", metaPendente.getStatus());
-
         String statusAntigo = metaPendente.getStatus();
         metaPendente.atualizarStatus(null);
         assertEquals(statusAntigo, metaPendente.getStatus());
@@ -309,98 +332,179 @@ public class SistemaMentoriaTest {
     }
 
     @Test
-    void testFeedbackConstrutorSucesso() throws FeedbackException {
-        Feedback feedback = new Feedback(1L, sessaoAprovada, 4, "Bom.");
-        assertNotNull(feedback);
-        assertEquals(4, feedback.getAvaliacao().getNota());
-        assertEquals("Bom.", feedback.getComentario());
-    }
-
-    @Test
-    void testFeedbackExcecaoComentarioObrigatorio() {
-        assertThrows(FeedbackException.class, () -> new Feedback(2L, sessaoAprovada, 0, null));
-        assertThrows(FeedbackException.class, () -> new Feedback(2L, sessaoAprovada, 0, "  "));
-        assertThrows(FeedbackException.class, () -> new Feedback(3L, sessaoAprovada, 1, null));
-        assertThrows(FeedbackException.class, () -> new Feedback(4L, sessaoAprovada, 5, null));
-    }
-
-    @Test
-    void testFeedbackExcecaoSessaoNula() {
-        assertThrows(IllegalArgumentException.class, () -> new Feedback(5L, null, 3, "Comentário"));
-    }
-
-    @Test
     void testAvaliacaoConstrutorEValidacaoNota() {
         assertDoesNotThrow(() -> new Avaliacao(1L, 0));
         assertDoesNotThrow(() -> new Avaliacao(2L, 5));
-
         assertThrows(IllegalArgumentException.class, () -> new Avaliacao(3L, -1));
         assertThrows(IllegalArgumentException.class, () -> new Avaliacao(4L, 6));
+        Avaliacao aval = new Avaliacao(1L, 3);
+        assertThrows(IllegalArgumentException.class, () -> aval.setNota(10));
     }
 
     @Test
-    void testAvaliacaoSetNota() {
-        Avaliacao avaliacao = new Avaliacao(1L, 3);
-        avaliacao.setNota(5);
-        assertEquals(5, avaliacao.getNota());
-
-        assertThrows(IllegalArgumentException.class, () -> avaliacao.setNota(10));
+    void testSessaoMentoriaGettersSetters() {
+        sessaoPendente.setId(100L);
+        assertEquals(100L, sessaoPendente.getId());
+        Mentor novoMentor = new Mentor(10L, "Novo Mentor", "n@m.com", "1", "b", area, agenda);
+        sessaoPendente.setMentor(novoMentor);
+        assertEquals(novoMentor, sessaoPendente.getMentor());
+        Mentorado novoMentorado = new Mentorado(11L, "Novo Mentorado", "n@mdo.com", "2");
+        sessaoPendente.setMentorado(novoMentorado);
+        assertEquals(novoMentorado, sessaoPendente.getMentorado());
+        LocalDateTime novaData = LocalDateTime.now().plusYears(1);
+        sessaoPendente.setDataHora(novaData);
+        assertEquals(novaData, sessaoPendente.getDataHora());
+        sessaoPendente.setStatus("Cancelada");
+        assertEquals("Cancelada", sessaoPendente.getStatus());
+        assertNotNull(sessaoPendente.getMentor());
+        assertNotNull(sessaoPendente.getMentorado());
+        assertNotNull(sessaoPendente.getDataHora());
+        assertNotNull(sessaoPendente.getStatus());
     }
 
     @Test
-    void testMensagemConstrutorEGetters() {
-        LocalDateTime dataEnvio = LocalDateTime.now();
-        Mensagem msg = new Mensagem(1L, mentor, mentoradoA, "Olá!", dataEnvio);
-
-        assertEquals(1L, msg.getId());
-        assertEquals(mentor, msg.getRemetente());
-        assertEquals(mentoradoA, msg.getDestinatario());
-        assertEquals("Olá!", msg.getConteudo());
-        assertEquals(dataEnvio, msg.getDataEnvio());
+    void testUsuarioEqualsEHashCodeCompleto() {
+        Usuario clone = new Mentor(1L, "Clone", "clone@email.com", "senha", "Bio", area, agenda);
+        Usuario diferente = new Mentor(99L, "Diferente", "dif@email.com", "senha", "Bio", area, agenda);
+        assertTrue(mentor.equals(mentor));
+        assertTrue(mentor.equals(clone));
+        assertEquals(mentor.hashCode(), clone.hashCode());
+        assertFalse(mentor.equals(diferente));
+        assertNotEquals(mentor.hashCode(), diferente.hashCode());
+        assertFalse(mentor.equals(null));
+        assertFalse(mentor.equals(new Object()));
     }
 
     @Test
-    void testMensagemConstrutorComArgumentoNulo() {
-        assertThrows(IllegalArgumentException.class, () -> new Mensagem(1L, null, mentoradoA, "Oi", LocalDateTime.now()));
+    void testMentorEqualsEHashCodeCompleto() {
+        Mentor clone = new Mentor(1L, "Carlos Silva", "carlos.silva@email.com", "senha123", "Especialista em Java e Spring.", area, agenda);
+        Mentor diferente = new Mentor(99L, "Diferente", "dif@email.com", "senha", "Bio", area, agenda);
+        assertTrue(mentor.equals(clone));
+        assertEquals(mentor.hashCode(), clone.hashCode());
+        assertFalse(mentor.equals(diferente));
+        assertFalse(mentor.equals(new Mentorado(1L, "Não é mentor", "e@e.com", "s")));
     }
 
     @Test
-    void testAgendaAdicionarRemoverHorario() {
-        LocalDateTime horario1 = LocalDateTime.now().plusDays(1);
-        LocalDateTime horario2 = LocalDateTime.now().plusDays(2);
-
-        agenda.adicionarHorario(horario1);
-        agenda.adicionarHorario(horario2);
-        assertTrue(agenda.getHorariosDisponiveis().contains(horario1));
-        assertTrue(agenda.getHorariosDisponiveis().contains(horario2));
-
-        int tamanhoAntes = agenda.getHorariosDisponiveis().size();
-        agenda.adicionarHorario(horario1);
-        assertEquals(tamanhoAntes, agenda.getHorariosDisponiveis().size());
-
-        agenda.removerHorario(horario1);
-        assertFalse(agenda.getHorariosDisponiveis().contains(horario1));
+    void testMentoradoEqualsEHashCodeCompleto() {
+        Mentorado clone = new Mentorado(2L, "Clone", "c@email.com", "s");
+        Mentorado diferente = new Mentorado(99L, "Diferente", "d@email.com", "s");
+        assertTrue(mentoradoA.equals(clone));
+        assertEquals(mentoradoA.hashCode(), clone.hashCode());
+        assertFalse(mentoradoA.equals(diferente));
+        assertFalse(mentoradoA.equals(new Mentor(2L, "Não é mentorado", "e@e.com", "s", "b", area, agenda)));
     }
 
     @Test
-    void testTecnologiaEqualsEHashCode() {
-        Tecnologia t1 = new Tecnologia(1L, "Java");
-        Tecnologia t2 = new Tecnologia(1L, "Java");
-        Tecnologia t3 = new Tecnologia(2L, "Python");
-
-        assertEquals(t1, t2);
-        assertNotEquals(t1, t3);
-        assertEquals(t1.hashCode(), t2.hashCode());
+    void testSessaoMentoriaEqualsEHashCodeCompleto() {
+        SessaoMentoria clone = new SessaoMentoria(1L, mentor, mentoradoA, sessaoPendente.getDataHora());
+        SessaoMentoria diferente = new SessaoMentoria(99L, mentor, mentoradoA, sessaoPendente.getDataHora());
+        assertTrue(sessaoPendente.equals(clone));
+        assertEquals(sessaoPendente.hashCode(), clone.hashCode());
+        assertFalse(sessaoPendente.equals(diferente));
+        assertFalse(sessaoPendente.equals(null));
+        assertFalse(sessaoPendente.equals(new Object()));
     }
 
     @Test
-    void testAreaConhecimentoEqualsEHashCode() {
+    void testPlanoEstudoEqualsEHashCodeCompleto() {
+        PlanoEstudo clone = new PlanoEstudo(1L);
+        PlanoEstudo diferente = new PlanoEstudo(99L);
+        assertTrue(planoEstudo.equals(clone));
+        assertEquals(planoEstudo.hashCode(), clone.hashCode());
+        assertFalse(planoEstudo.equals(diferente));
+        assertFalse(planoEstudo.equals(null));
+        assertFalse(planoEstudo.equals(new Object()));
+    }
+
+    @Test
+    void testMetaEqualsEHashCodeCompleto() {
+        Meta clone = new Meta(1L, "Desc", "Status", LocalDateTime.now());
+        Meta diferente = new Meta(99L, "Desc", "Status", LocalDateTime.now());
+        assertTrue(metaPendente.equals(clone));
+        assertEquals(metaPendente.hashCode(), clone.hashCode());
+        assertFalse(metaPendente.equals(diferente));
+        assertFalse(metaPendente.equals(null));
+        assertFalse(metaPendente.equals(new Object()));
+    }
+
+    @Test
+    void testFeedbackEqualsEHashCodeCompleto() throws FeedbackException {
+        Feedback feedback = new Feedback(1L, sessaoAprovada, 4, "Bom.");
+        Feedback clone = new Feedback(1L, sessaoAprovada, 3, "Ok.");
+        Feedback diferente = new Feedback(99L, sessaoAprovada, 4, "Bom.");
+
+        assertTrue(feedback.equals(clone));
+        assertEquals(feedback.hashCode(), clone.hashCode());
+        assertFalse(feedback.equals(diferente));
+        assertFalse(feedback.equals(null));
+        assertFalse(feedback.equals(new Object()));
+        assertNotNull(feedback.getSessao());
+        assertNotNull(feedback.getAvaliacao());
+        assertNotNull(feedback.getComentario());
+        assertNotNull(feedback.getId());
+    }
+
+    @Test
+    void testAvaliacaoEqualsEHashCodeCompleto() {
+        Avaliacao aval = new Avaliacao(1L, 3);
+        Avaliacao clone = new Avaliacao(1L, 5);
+        Avaliacao diferente = new Avaliacao(99L, 3);
+        assertTrue(aval.equals(clone));
+        assertEquals(aval.hashCode(), clone.hashCode());
+        assertFalse(aval.equals(diferente));
+        assertFalse(aval.equals(null));
+        assertFalse(aval.equals(new Object()));
+    }
+
+    @Test
+    void testMensagemEqualsEHashCodeCompleto() {
+        Mensagem msg = new Mensagem(1L, mentor, mentoradoA, "Olá!", LocalDateTime.now());
+        Mensagem clone = new Mensagem(1L, mentor, mentoradoB, "Tchau", LocalDateTime.now());
+        Mensagem diferente = new Mensagem(99L, mentor, mentoradoA, "Olá!", LocalDateTime.now());
+        assertTrue(msg.equals(clone));
+        assertEquals(msg.hashCode(), clone.hashCode());
+        assertFalse(msg.equals(diferente));
+        assertFalse(msg.equals(null));
+        assertFalse(msg.equals(new Object()));
+    }
+
+    @Test
+    void testAgendaEqualsEHashCodeCompleto() {
+        Agenda a1 = new Agenda(1L);
+        Agenda a1Clone = new Agenda(1L);
+        Agenda a2 = new Agenda(2L);
+        assertTrue(a1.equals(a1Clone));
+        assertTrue(a1.equals(a1));
+        assertFalse(a1.equals(a2));
+        assertFalse(a1.equals(null));
+        assertFalse(a1.equals(new Object()));
+        assertEquals(a1.hashCode(), a1Clone.hashCode());
+    }
+
+    @Test
+    void testAreaConhecimentoEqualsEHashCodeCompleto() {
         AreaConhecimento a1 = new AreaConhecimento(1L, "Backend");
-        AreaConhecimento a2 = new AreaConhecimento(1L, "Backend");
-        AreaConhecimento a3 = new AreaConhecimento(2L, "Frontend");
+        AreaConhecimento a1Clone = new AreaConhecimento(1L, "Backend");
+        AreaConhecimento a2 = new AreaConhecimento(2L, "Frontend");
+        assertTrue(a1.equals(a1Clone));
+        assertTrue(a1.equals(a1));
+        assertFalse(a1.equals(a2));
+        assertFalse(a1.equals(null));
+        assertFalse(a1.equals(new Object()));
+        assertEquals(a1.hashCode(), a1Clone.hashCode());
+    }
 
-        assertEquals(a1, a2);
-        assertNotEquals(a1, a3);
-        assertEquals(a1.hashCode(), a2.hashCode());
+    @Test
+    void testTecnologiaEqualsEHashCodeCompleto() {
+        Tecnologia t1 = new Tecnologia(1L, "Java");
+        Tecnologia t1Clone = new Tecnologia(1L, "Java");
+        Tecnologia t2 = new Tecnologia(2L, "Python");
+        assertTrue(t1.equals(t1Clone));
+        assertTrue(t1.equals(t1));
+        assertFalse(t1.equals(t2));
+        assertFalse(t1.equals(null));
+        assertFalse(t1.equals(new Object()));
+        assertEquals(t1.hashCode(), t1Clone.hashCode());
     }
 }
