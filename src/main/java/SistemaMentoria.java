@@ -279,7 +279,7 @@ class SessaoMentoria {
         return new ArrayList<>(feedbacks);
     }
 
-    public boolean estaoTodosFeedbacksPresentes() {
+    public boolean getTodosFeedbacks() {
         return feedbacks.size() == 2;
     }
 

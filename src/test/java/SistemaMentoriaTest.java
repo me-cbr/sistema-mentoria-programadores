@@ -269,14 +269,14 @@ public class SistemaMentoriaTest {
 
     @Test
     void testAdicionarFeedback() throws FeedbackException {
-        assertFalse(sessaoFinalizada.estaoTodosFeedbacksPresentes());
+        assertFalse(sessaoFinalizada.getTodosFeedbacks());
         sessaoFinalizada.adicionarFeedback(mentoradoA, 4, "Sessão foi muito boa.");
         assertEquals(1, sessaoFinalizada.getFeedbacks().size());
         assertEquals(mentoradoA, sessaoFinalizada.getFeedbacks().get(0).getAutor());
-        assertFalse(sessaoFinalizada.estaoTodosFeedbacksPresentes());
+        assertFalse(sessaoFinalizada.getTodosFeedbacks());
         sessaoFinalizada.adicionarFeedback(mentor, 5, "Mentorado participativo.");
         assertEquals(2, sessaoFinalizada.getFeedbacks().size());
-        assertTrue(sessaoFinalizada.estaoTodosFeedbacksPresentes());
+        assertTrue(sessaoFinalizada.getTodosFeedbacks());
         assertThrows(IllegalStateException.class, () -> sessaoPendente.adicionarFeedback(mentor, 5, "Comentário"));
         assertThrows(FeedbackException.class, () -> sessaoFinalizada.adicionarFeedback(mentor, 4, "Segundo comentário."));
         assertThrows(SecurityException.class, () -> sessaoFinalizada.adicionarFeedback(mentoradoNaoDaSessao, 3, "Eu nem estava lá."));
