@@ -74,7 +74,7 @@ class MentorMockTest {
 
     @Test
     void gerenciarDisponibilidade_QuandoHorarioMuitoProximo_DeveRecusarSessao() {
-        LocalDateTime horarioProposto = LocalDateTime.now().plusHours(4); // Menos de 6h de antecedência
+        LocalDateTime horarioProposto = LocalDateTime.now().plusHours(4);
         when(agendaMock.getHorariosDisponiveis()).thenReturn(List.of(horarioProposto));
         when(sessaoPendenteMock.getStatus()).thenReturn("Pendente");
 
@@ -87,7 +87,7 @@ class MentorMockTest {
 
     @Test
     void gerenciarDisponibilidade_QuandoHorarioTemAntecedenciaMedia_DeveAprovarParaRevisao() {
-        LocalDateTime horarioProposto = LocalDateTime.now().plusHours(12); // Entre 6h e 24h
+        LocalDateTime horarioProposto = LocalDateTime.now().plusHours(12);
         when(agendaMock.getHorariosDisponiveis()).thenReturn(List.of(horarioProposto));
         when(sessaoPendenteMock.getStatus()).thenReturn("Pendente");
 
