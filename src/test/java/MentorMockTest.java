@@ -59,7 +59,6 @@ class MentorMockTest {
         verify(agendaMock).getHorariosDisponiveis();
     }
 
-
     @Test
     void gerenciarDisponibilidade_QuandoSessaoNaoEstaPendente_DeveRetornarErro() {
         LocalDateTime horarioProposto = LocalDateTime.now().plusDays(2);
