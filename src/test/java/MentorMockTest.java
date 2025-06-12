@@ -34,7 +34,6 @@ class MentorMockTest {
         mentor.adicionarSessao(sessaoPendenteMock);
     }
 
-
     @Test
     void gerenciarDisponibilidade_QuandoHorarioDisponivel_DeveAprovarSessao() {
         LocalDateTime horarioProposto = LocalDateTime.now().plusDays(2);
