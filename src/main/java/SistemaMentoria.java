@@ -162,9 +162,9 @@ class Mentor extends Usuario {
         }
 
         if (statusAprovacao.contains("Prioridade")) {
-            System.out.println("DEBUG: Sessão aprovada com prioridade para mentorado ");
+            System.out.println("Sessão aprovada com prioridade para mentorado ");
         } else if (statusAprovacao.contains("Recusada")) {
-            System.out.println("DEBUG: Penalidade aplicada ao mentor por sessão recusada.");
+            System.out.println("Penalidade aplicada ao mentor por sessão recusada.");
         }
         return "Status da aprovação: " + statusAprovacao;
     }
