@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 class FeedbackException extends Exception {
     public FeedbackException(String message) {
@@ -61,8 +62,6 @@ abstract class Usuario {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Usuario)) return false;
         Usuario usuario = (Usuario) o;
         return Objects.equals(id, usuario.id);
     }
@@ -77,25 +76,31 @@ abstract class Usuario {
 class Mentor extends Usuario {
     private String biografia;
     private List<Tecnologia> tecnologias;
-    private AreaConhecimento areaConhecimento;
     private Agenda agenda;
     private List<SessaoMentoria> minhasSessoes;
-    private List<Feedback> feedbacks;
 
-    public Mentor(Long id, String nome, String email, String senha, String biografia, AreaConhecimento areaConhecimento, Agenda agenda) {
+    public Mentor(Long id, String nome, String email, String senha, String biografia, Agenda agenda) {
         super(id, nome, email, senha);
         this.biografia = biografia;
         this.tecnologias = new ArrayList<>();
-        this.areaConhecimento = areaConhecimento;
         this.agenda = agenda;
         this.minhasSessoes = new ArrayList<>();
-        this.feedbacks = new ArrayList<>();
     }
 
     public void adicionarTecnologia(Tecnologia tecnologia) {
         if (tecnologia != null && !tecnologias.contains(tecnologia)) {
             tecnologias.add(tecnologia);
         }
+    }
+
+    public List<AreaConhecimento> getAreasConhecimento() {
+        if (this.tecnologias.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return this.tecnologias.stream()
+                .map(Tecnologia::getAreaConhecimento)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     public void adicionarSessao(SessaoMentoria sessao) {
@@ -113,7 +118,7 @@ class Mentor extends Usuario {
             return "Erro: Horário ou sessão inválidos.";
         }
 
-        if (agenda != null && agenda.getHorariosDisponiveis() != null) {
+        if (agenda != null) {
             for (LocalDateTime horario : agenda.getHorariosDisponiveis()) {
                 if (horario.isEqual(horarioProposto)) {
                     horarioValido = true;
@@ -126,12 +131,10 @@ class Mentor extends Usuario {
             return "Horário proposto não está disponível na agenda.";
         }
 
-        if (minhasSessoes != null) {
-            for (SessaoMentoria s : minhasSessoes) {
-                if (s.equals(sessao) && s.getStatus().equalsIgnoreCase("Pendente")) {
-                    sessaoExisteEPendente = true;
-                    break;
-                }
+        for (SessaoMentoria s : minhasSessoes) {
+            if (s.equals(sessao) && s.getStatus().equalsIgnoreCase("Pendente")) {
+                sessaoExisteEPendente = true;
+                break;
             }
         }
 
@@ -166,26 +169,12 @@ class Mentor extends Usuario {
         return "Status da aprovação: " + statusAprovacao;
     }
 
-    public void darFeedback(SessaoMentoria sessao, int nota, String comentario) throws FeedbackException {
-        long feedbackId = System.currentTimeMillis();
-        Feedback novoFeedback = new Feedback(feedbackId, sessao, nota, comentario);
-        this.feedbacks.add(novoFeedback);
-    }
-
-    public List<Feedback> getFeedbacks() {
-        return new ArrayList<>(feedbacks);
-    }
-
     public String getBiografia() {
         return biografia;
     }
 
     public List<Tecnologia> getTecnologias() {
         return new ArrayList<>(tecnologias);
-    }
-
-    public AreaConhecimento getAreaConhecimento() {
-        return areaConhecimento;
     }
 
     public Agenda getAgenda() {
@@ -198,10 +187,6 @@ class Mentor extends Usuario {
 
     public void setBiografia(String biografia) {
         this.biografia = biografia;
-    }
-
-    public void setAreaConhecimento(AreaConhecimento areaConhecimento) {
-        this.areaConhecimento = areaConhecimento;
     }
 
     public void setAgenda(Agenda agenda) {
@@ -219,30 +204,17 @@ class Mentor extends Usuario {
     public int hashCode() {
         return super.hashCode();
     }
-
 }
 
 class Mentorado extends Usuario {
     private PlanoEstudo planoEstudo;
-    private List<Feedback> feedbacks;
 
     public Mentorado(Long id, String nome, String email, String senha) {
         super(id, nome, email, senha);
-        this.feedbacks = new ArrayList<>();
     }
 
     public PlanoEstudo getPlanoEstudo() {
         return planoEstudo;
-    }
-
-    public void darFeedback(SessaoMentoria sessao, int nota, String comentario) throws FeedbackException {
-        long feedbackId = System.currentTimeMillis();
-        Feedback novoFeedback = new Feedback(feedbackId, sessao, nota, comentario);
-        this.feedbacks.add(novoFeedback);
-    }
-
-    public List<Feedback> getFeedbacks() {
-        return new ArrayList<>(feedbacks);
     }
 
     public void setPlanoEstudo(PlanoEstudo planoEstudo) {
@@ -252,7 +224,6 @@ class Mentorado extends Usuario {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
         return super.equals(o);
     }
 
@@ -268,6 +239,7 @@ class SessaoMentoria {
     private Mentorado mentorado;
     private LocalDateTime dataHora;
     private String status;
+    private List<Feedback> feedbacks;
 
     public SessaoMentoria(Long id, Mentor mentor, Mentorado mentorado, LocalDateTime dataHora) {
         this.id = id;
@@ -275,6 +247,7 @@ class SessaoMentoria {
         this.mentorado = mentorado;
         this.dataHora = dataHora;
         this.status = "Pendente";
+        this.feedbacks = new ArrayList<>();
     }
 
     public void iniciarSessao() {
@@ -284,6 +257,30 @@ class SessaoMentoria {
         } else {
             System.out.println("Sessão " + id + " não pode ser iniciada. Verifique o status e o horário.");
         }
+    }
+
+    public void adicionarFeedback(Usuario autor, int nota, String comentario) throws FeedbackException {
+        if (!this.status.equalsIgnoreCase("Finalizada")) {
+            throw new IllegalStateException("Só é possível dar feedback após a sessão ser finalizada.");
+        }
+
+        for (Feedback f : this.feedbacks) {
+            if (f.getAutor().equals(autor)) {
+                throw new FeedbackException("Este usuário já forneceu um feedback para esta sessão.");
+            }
+        }
+
+        long feedbackId = System.currentTimeMillis();
+        Feedback novoFeedback = new Feedback(feedbackId, this, autor, nota, comentario);
+        this.feedbacks.add(novoFeedback);
+    }
+
+    public List<Feedback> getFeedbacks() {
+        return new ArrayList<>(feedbacks);
+    }
+
+    public boolean estaoTodosFeedbacksPresentes() {
+        return feedbacks.size() == 2;
     }
 
     public void finalizarSessao() {
@@ -532,40 +529,37 @@ class Meta {
 class Feedback {
     private Long id;
     private SessaoMentoria sessao;
+    private Usuario autor;
     private Avaliacao avaliacao;
     private String comentario;
 
-    public Feedback(Long id, SessaoMentoria sessao, int nota, String comentario) throws FeedbackException {
+    public Feedback(Long id, SessaoMentoria sessao, Usuario autor, int nota, String comentario) throws FeedbackException {
         if (sessao == null) {
             throw new IllegalArgumentException("O Feedback deve estar associado a uma sessão.");
         }
 
-        boolean comentarioInvalido = (comentario == null || comentario.trim().isEmpty());
+        if (autor == null) {
+            throw new IllegalArgumentException("O Feedback deve estar associado a um autor.");
+        }
 
-        switch (nota) {
-            case 0:
-                if (comentarioInvalido)
-                    throw new FeedbackException("Nota 0 (Insuficiente) exige um comentário obrigatório sobre o que melhorar.");
-                break;
-            case 1:
-                if (comentarioInvalido)
-                    throw new FeedbackException("Nota 1 (Ruim) exige um comentário obrigatório sobre o que melhorar.");
-                break;
-            case 5:
-                if (comentarioInvalido)
-                    throw new FeedbackException("Nota 5 (Excelente) exige um comentário obrigatório.");
-                break;
-            case 2:
-            case 3:
-            case 4:
-            default:
-                break;
+        if (!autor.equals(sessao.getMentor()) && !autor.equals(sessao.getMentorado())) {
+            throw new SecurityException("O autor do feedback não participa da sessão de mentoria.");
+        }
+
+        boolean comentarioInvalido = (comentario == null || comentario.trim().isEmpty());
+        if ((nota == 0 || nota == 1 || nota == 5) && comentarioInvalido) {
+            throw new FeedbackException("Para notas 0, 1 ou 5, um comentário é obrigatório.");
         }
 
         this.id = id;
         this.sessao = sessao;
         this.comentario = comentario;
+        this.autor = autor;
         this.avaliacao = new Avaliacao(null, nota);
+    }
+
+    public Usuario getAutor() {
+        return autor;
     }
 
     public Long getId() {
@@ -756,34 +750,36 @@ class Agenda {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, horariosDisponiveis);
+        return Objects.hash(id);
     }
 }
 
 class Tecnologia {
     private Long id;
     private String nome;
+    private AreaConhecimento areaConhecimento;
 
-    public Tecnologia(Long id, String nome) {
+    public Tecnologia(Long id, String nome, AreaConhecimento areaConhecimento) {
         this.id = id;
         this.nome = nome;
+        this.areaConhecimento = areaConhecimento;
     }
 
-    public Long getId() {
-        return id;
+    public AreaConhecimento getAreaConhecimento() {
+        return areaConhecimento;
     }
 
-    public String getNome() {
-        return nome;
+    public void setAreaConhecimento(AreaConhecimento areaConhecimento) {
+        this.areaConhecimento = areaConhecimento;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getId() { return id; }
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+    public String getNome() { return nome; }
+
+    public void setId(Long id) { this.id = id; }
+
+    public void setNome(String nome) { this.nome = nome; }
 
     @Override
     public boolean equals(Object o) {
@@ -794,9 +790,7 @@ class Tecnologia {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(id, nome);
-    }
+    public int hashCode() { return Objects.hash(id); }
 }
 
 class AreaConhecimento {
@@ -834,6 +828,6 @@ class AreaConhecimento {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, nome);
+        return Objects.hash(id);
     }
 }
